@@ -4,7 +4,9 @@ async function initializeMySQL() {
   try {
     const connection = await mysql.getConnection();
 
-    // Tabla básica para probar sincronización
+    console.log('--- Iniciando verificación y creación de tablas en MySQL ---');
+
+    // Tabla base para sincronización offline/online
     await connection.query(`
       CREATE TABLE IF NOT EXISTS local_notes (
         id VARCHAR(36) PRIMARY KEY,
@@ -17,7 +19,9 @@ async function initializeMySQL() {
       )
     `);
 
+    // ==========================================
     // Módulo 1: SIE (Sistema Institucional de Evaluación)
+    // ==========================================
     await connection.query(`
       CREATE TABLE IF NOT EXISTS escalas_valorativas (
         id VARCHAR(36) PRIMARY KEY,
@@ -40,7 +44,9 @@ async function initializeMySQL() {
       )
     `);
 
+    // ==========================================
     // Módulo 2: Usuarios, Seguridad y Roles
+    // ==========================================
     await connection.query(`
       CREATE TABLE IF NOT EXISTS usuarios (
         id VARCHAR(36) PRIMARY KEY,
@@ -61,11 +67,17 @@ async function initializeMySQL() {
       )
     `);
 
-    // Inserción de roles básicos si no existen (Usamos la función nativa UUID() de MySQL)
+    // INSERCIÓN CRÍTICA: Solo datos maestros esenciales (Sin datos de prueba)
+    // Usamos UUID() nativo de MySQL para generar los IDs de forma segura
     await connection.query(`
       INSERT IGNORE INTO roles (id, nombre) VALUES 
-      (UUID(), 'Administrador'), (UUID(), 'Secretaría'), (UUID(), 'Coordinación'), 
-      (UUID(), 'Docente'), (UUID(), 'Estudiante'), (UUID(), 'Acudiente'), (UUID(), 'Rector')
+      (UUID(), 'Administrador'), 
+      (UUID(), 'Rectoría'), 
+      (UUID(), 'Secretaría'), 
+      (UUID(), 'Coordinación'), 
+      (UUID(), 'Docente'), 
+      (UUID(), 'Estudiante'), 
+      (UUID(), 'Acudiente')
     `);
 
     await connection.query(`
@@ -79,7 +91,9 @@ async function initializeMySQL() {
       )
     `);
 
+    // ==========================================
     // Módulo 3: Gestión Académica y Matrículas
+    // ==========================================
     await connection.query(`
       CREATE TABLE IF NOT EXISTS sedes (
         id VARCHAR(36) PRIMARY KEY,
@@ -143,7 +157,9 @@ async function initializeMySQL() {
       )
     `);
 
+    // ==========================================
     // Módulo 4: Planeación y Malla Curricular
+    // ==========================================
     await connection.query(`
       CREATE TABLE IF NOT EXISTS asignaturas (
         id VARCHAR(36) PRIMARY KEY,
@@ -181,7 +197,9 @@ async function initializeMySQL() {
       )
     `);
 
+    // ==========================================
     // Módulo 8: Auditoría y Trazabilidad de Datos
+    // ==========================================
     await connection.query(`
       CREATE TABLE IF NOT EXISTS logs_auditoria (
         id VARCHAR(36) PRIMARY KEY,
@@ -195,7 +213,7 @@ async function initializeMySQL() {
       )
     `);
 
-    // Trigger de Auditoría
+    // Trigger de Auditoría en la Nube
     await connection.query(`
       CREATE TRIGGER IF NOT EXISTS trg_audit_notas_update
       AFTER UPDATE ON local_notes
@@ -208,10 +226,12 @@ async function initializeMySQL() {
       END;
     `);
 
-    console.log('MySQL Database tables and Triggers initialized.');
+    console.log('--- Configuración de MySQL completada con éxito ---');
     connection.release();
   } catch (err) {
-    console.error('Error initializing MySQL schema', err);
+    console.error('Error crítico inicializando el esquema de MySQL:', err);
+    // Propagar el error para que el bootstrapper pueda detener la ejecución si la BD falla
+    throw err; 
   }
 }
 
